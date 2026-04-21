@@ -9,16 +9,14 @@
  * and reused until explicitly refreshed.
  */
 
-import { createRequire } from "module";
+// These are native ESM packages; import them directly (no createRequire needed).
+import { VectorTile } from "@mapbox/vector-tile";
+import Pbf from "pbf";
+
 import { gunzipSync } from "zlib";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from "fs";
 import path from "path";
 import type { FieldRecord, SportCode } from "./types";
-
-const require = createRequire(import.meta.url);
-const { VectorTile } = require("@mapbox/vector-tile");
-const PbfMod = require("pbf");
-const Pbf = PbfMod.default ?? PbfMod;
 
 const TILE_BASE = "https://maps.nycgovparks.org/athletic_facility";
 const ZOOM = 13;
@@ -32,8 +30,7 @@ function lonToX(lon: number, z: number) {
 function latToY(lat: number, z: number) {
   const r = Math.PI / 180;
   return Math.floor(
-    ((1 - Math.log(Math.tan(lat * r) + 1 / Math.cos(lat * r)) / Math.PI) /
-      2) *
+    ((1 - Math.log(Math.tan(lat * r) + 1 / Math.cos(lat * r)) / Math.PI) / 2) *
       2 ** z
   );
 }
@@ -52,20 +49,22 @@ async function fetchTile(z: number, x: number, y: number): Promise<FieldRecord[]
   } catch {
     return [];
   }
-  if (!resp.ok || resp.status === 204) return [];
+  if (!resp.ok) return [];
 
   const raw = Buffer.from(await resp.arrayBuffer());
   if (raw.length < 10) return [];
 
+  // Tiles may be gzip-compressed depending on request headers
   let data = raw;
   if (raw[0] === 0x1f && raw[1] === 0x8b) data = gunzipSync(raw);
 
   try {
     const tile = new VectorTile(new Pbf(new Uint8Array(data)));
-    // Prefer the permitable-only layer; fall back to the full layer
     const layer =
-      tile.layers["athletic_facility_permitable"] ??
-      tile.layers["athletic_facility"];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (tile as any).layers["athletic_facility_permitable"] ??
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (tile as any).layers["athletic_facility"];
     if (!layer) return [];
 
     const out: FieldRecord[] = [];
@@ -113,7 +112,6 @@ export async function buildCatalog(opts?: {
       if (!fields[f.system]) fields[f.system] = f;
     });
     opts?.onProgress?.(Math.min(i + BATCH, tiles.length), tiles.length);
-    // 50ms pause between batches — polite to the tile server
     if (i + BATCH < tiles.length) await new Promise((r) => setTimeout(r, 50));
   }
 
@@ -133,7 +131,5 @@ export function filterBySport(
 export function getCatalogAge(): number | null {
   const p = catalogPath();
   if (!existsSync(p)) return null;
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const stat = (require("fs") as typeof import("fs")).statSync(p);
-  return Date.now() - stat.mtimeMs;
+  return Date.now() - statSync(p).mtimeMs;
 }
