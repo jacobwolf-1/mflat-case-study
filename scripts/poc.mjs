@@ -30,10 +30,10 @@ const Pbf = PbfMod.default ?? PbfMod;
 
 // ── config from args ──────────────────────────────────────────────────────────
 const SPORT = process.argv[2] ?? "SCR";
-const START_DATE = process.argv[3] ?? (() => {
-  const d = new Date(); d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-})();
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+const START_DATE =
+  process.argv[3] ?? tomorrow.toISOString().slice(0, 10);
 const DAYS = Number(process.argv[4] ?? 3);
 
 const SPORT_NAMES = {

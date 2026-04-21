@@ -4,6 +4,7 @@ import { normalizeFieldDetail } from "@/lib/availability-client";
 import type { FieldRecord } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+const MAX_DAYS = 7;
 
 function dateRange(start: string, days: number): string[] {
   const out: string[] = [];
@@ -19,10 +20,18 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const system = searchParams.get("system");
   const date = searchParams.get("date");
-  const days = Math.min(Number(searchParams.get("days") ?? "3"), 7);
+  const rawDays = searchParams.get("days") ?? "3";
+  const days = Number(rawDays);
 
   if (!system || !date) {
     return Response.json({ error: "Missing required params: system, date" }, { status: 400 });
+  }
+
+  if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
+    return Response.json(
+      { error: `Invalid days value. Expected an integer between 1 and ${MAX_DAYS}.` },
+      { status: 400 }
+    );
   }
 
   try {

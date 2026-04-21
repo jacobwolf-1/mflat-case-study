@@ -1,6 +1,6 @@
 # NYC Parks Field Availability
 
-Search field and court permit availability across NYC parks. Data comes from the public NYC Parks permit workflow — no private APIs or credentials required.
+Search field and court permit availability across NYC parks. This MVP uses the public NYC Parks permit workflow only — no private APIs or credentials required. The current UI supports short-range searches (up to 7 days) and shows a one-screen comparison table with expandable slot-level detail.
 
 ## One-line setup
 
@@ -75,17 +75,17 @@ scripts/
   poc.mjs                     # standalone CLI proof-of-concept (also seeds the catalog)
 data/cache/                   # all disk caches live here (gitignored)
 docs/
-  data-access-plan.md         # findings, endpoint schemas, risks, next steps
+  data-access-plan.md         # findings, endpoint schemas, risks, and implementation notes
 ```
 
 ## Known limitations
 
-- **Noon snapshot only** — the table shows "Busy" if a field has a permit at noon. Fields with only morning or evening reservations appear as "Free." Expand a row to see the full day's time slots.
-- **7-day detail window** — the per-field detail endpoint covers a fixed 7-day window from the requested start date.
-- **Max 200 fields shown** — results are capped to keep the table usable. Fully-free fields sort to the top.
-- **Catalog staleness** — field metadata changes infrequently; rebuild the catalog monthly or when the permit season changes.
-- **No published rate limits** — Parks doesn't publish rate limit info. The app adds 50–200 ms delays between batches and caches aggressively.
-- **Local only** — no auth, no database, no deployment config. Runs on localhost only.
+- **Search range is capped at 7 days** — the current UI/API intentionally limit the date range for a fast MVP.
+- **Daily status uses a noon snapshot** — the table marks a field as busy if it appears reserved at noon. A field with only morning or evening reservations may still appear free in the top-level table; expand a row for slot-level detail.
+- **Max 200 fields shown** — results are capped to keep the table usable. Fields with conflicts are prioritized near the top so the most decision-relevant rows are visible first.
+- **Catalog staleness** — field metadata changes infrequently; rebuild the catalog when needed.
+- **No published rate limits** — caching and short delays are used to stay polite to the public site.
+- **Local-only MVP** — no auth, DB, or deployment config.
 
 ## Demo query
 
@@ -97,4 +97,4 @@ Start date: today
 Days:       5
 ```
 
-Expected: ~266 soccer fields shown. Fully-free fields at the top. Click any row to expand and see permit-holder names and exact 30-minute time slots.
+Expected: ~266 soccer fields total, with up to 200 shown in the table. Fields with conflicts are prioritized near the top. Click any row to expand and see exact 30-minute slots and permit-holder names.

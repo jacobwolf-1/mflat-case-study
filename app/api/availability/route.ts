@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 // Max fields to return so the table stays usable
 const MAX_ROWS = 200;
+const MAX_DAYS = 7;
 
 function dateRange(start: string, days: number): string[] {
   const out: string[] = [];
@@ -24,10 +25,18 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const sport = searchParams.get("sport") as SportCode | null;
   const date = searchParams.get("date");
-  const days = Math.min(Number(searchParams.get("days") ?? "3"), 7);
+  const rawDays = searchParams.get("days") ?? "3";
+  const days = Number(rawDays);
 
   if (!sport || !date) {
     return Response.json({ error: "Missing required params: sport, date" }, { status: 400 });
+  }
+
+  if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
+    return Response.json(
+      { error: `Invalid days value. Expected an integer between 1 and ${MAX_DAYS}.` },
+      { status: 400 }
+    );
   }
 
   // Require the catalog to be pre-built (run `node scripts/poc.mjs` first)

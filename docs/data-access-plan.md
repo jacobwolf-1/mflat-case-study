@@ -145,17 +145,15 @@ This minimizes API calls: typically 1 call per date day + 1 call per field with 
 | `sports` field is not human-readable codes | Low | The tile's `sports` property appears to be a bitmask, not sport code strings. Filter by `primary_sport` instead. |
 | System IDs ≠ sport in all cases | Low | Some multi-use fields have `primary_sport=SCR` but system IDs with `FOOTBALL` in the name. This is a data inconsistency in Parks' own system, not a scraping artifact. |
 | Catalog staleness | Low | Fields are added/removed infrequently. Refreshing the catalog weekly or monthly is sufficient. |
-| 7-day window on per-field detail | Low | Endpoint 2 always returns 7 days from `date`. For ranges > 7 days, paginate by calling with the next start date. |
+| 7-day window on per-field detail | Low | Endpoint 2 always returns 7 days from `date`. This MVP intentionally caps the UI/API to 7 days. |
 | `available_slots` count is approximate | Low | We estimate 24 × 30-min slots per day; actual hours vary by field and season. The `close` object gives precise per-date closing times. |
 
 ---
 
-## What to Build Next
+## Out-of-Scope Extensions
 
-1. **Next.js route handler** wrapping `availability-client.ts` — thin JSON API for the UI.
-2. **Search UI** — sport dropdown, date-range picker, results table (available/partial/reserved).
-3. **Background catalog refresh** — cron or on-demand rebuild of `fields_catalog.json`.
-4. **Pagination** — for date ranges > 7 days, chain calls to endpoint 2.
+1. **Background catalog refresh** — cron or on-demand rebuild of `fields_catalog.json`.
+2. **Pagination for a broader product** — if the 7-day cap were removed in a future version, chain endpoint 2 calls behind the scenes.
 
 ---
 
