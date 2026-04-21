@@ -1,4 +1,3 @@
 node_modules
 .next
-data/cache/availability
-data/cache/poc_results.json
+data/cache/

@@ -91,12 +91,18 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Sort: most free days first, then alphabetically
-    rows.sort((a, b) =>
-      b.freeDayCount !== a.freeDayCount
-        ? b.freeDayCount - a.freeDayCount
-        : a.system.localeCompare(b.system)
-    );
+    // Sort: partial (some busy + some free) → fully reserved → fully free.
+    // This ensures real reservations are visible and not cut off by the cap.
+    function sortKey(r: Row): number {
+      const busyDays = r.days.length - r.freeDayCount;
+      if (busyDays > 0 && r.freeDayCount > 0) return 0; // partial: most interesting
+      if (busyDays > 0) return 1;                         // fully reserved
+      return 2;                                            // fully free
+    }
+    rows.sort((a, b) => {
+      const ka = sortKey(a), kb = sortKey(b);
+      return ka !== kb ? ka - kb : a.system.localeCompare(b.system);
+    });
 
     const total = rows.length;
     const limited = rows.slice(0, MAX_ROWS);
