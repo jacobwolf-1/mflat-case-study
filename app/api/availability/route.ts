@@ -2,42 +2,25 @@ import { type NextRequest } from "next/server";
 import { existsSync } from "fs";
 import path from "path";
 import { buildCatalog } from "@/lib/field-catalog";
-import { getReservedIds } from "@/lib/availability-client";
-import type { SportCode } from "@/lib/types";
+import { getReservedIds, dateRange, SNAPSHOT_TIME } from "@/lib/availability-client";
+import { parseAvailabilityQuery } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
 // Max fields to return so the table stays usable
 const MAX_ROWS = 200;
-const MAX_DAYS = 7;
-
-function dateRange(start: string, days: number): string[] {
-  const out: string[] = [];
-  const d = new Date(start + "T00:00:00Z");
-  for (let i = 0; i < days; i++) {
-    out.push(d.toISOString().slice(0, 10));
-    d.setUTCDate(d.getUTCDate() + 1);
-  }
-  return out;
-}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const sport = searchParams.get("sport") as SportCode | null;
-  const date = searchParams.get("date");
-  const rawDays = searchParams.get("days") ?? "3";
-  const days = Number(rawDays);
-
-  if (!sport || !date) {
-    return Response.json({ error: "Missing required params: sport, date" }, { status: 400 });
+  const parsed = parseAvailabilityQuery({
+    sport: searchParams.get("sport"),
+    date: searchParams.get("date"),
+    days: searchParams.get("days"),
+  });
+  if (!parsed.ok) {
+    return Response.json({ error: parsed.error }, { status: 400 });
   }
-
-  if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
-    return Response.json(
-      { error: `Invalid days value. Expected an integer between 1 and ${MAX_DAYS}.` },
-      { status: 400 }
-    );
-  }
+  const { sport, date, days } = parsed.value;
 
   // Require the catalog to be pre-built (run `node scripts/poc.mjs` first)
   const catalogPath = path.resolve(process.cwd(), "data/cache/fields_catalog.json");
@@ -65,7 +48,7 @@ export async function GET(req: NextRequest) {
 
     // One snapshot call per date (noon NYC time). Results are disk-cached 15 min.
     const snapshots = await Promise.all(
-      dates.map((d) => getReservedIds(d, "12:00"))
+      dates.map((d) => getReservedIds(d, SNAPSHOT_TIME))
     );
 
     const reservedSets = snapshots.map((s) => new Set(s.l));
