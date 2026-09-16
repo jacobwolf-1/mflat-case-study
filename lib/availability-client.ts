@@ -33,14 +33,15 @@ const UA =
 // Slots run in 30-minute increments — 8:00 AM through dusk
 const TYPICAL_SLOTS_PER_DAY = 24; // 12 hours / 0.5h
 
+// Representative midday instant for the top-level "is this field reserved today?"
+// snapshot. The UI and README describe this as the "noon snapshot"; keep this in
+// sync with that language and with the availability API route.
+export const SNAPSHOT_TIME = "12:00";
+
 function cacheDir(): string {
   const dir = path.resolve(process.cwd(), "data/cache/availability");
   mkdirSync(dir, { recursive: true });
   return dir;
-}
-
-function availabilityCachePath(date: string): string {
-  return path.join(cacheDir(), `${date}.json`);
 }
 
 function fieldDetailCachePath(systemId: string, date: string): string {
@@ -68,7 +69,7 @@ async function get<T>(url: string): Promise<T> {
  */
 export async function getReservedIds(
   date: string,
-  time = "9:00",
+  time = SNAPSHOT_TIME,
   opts?: { maxAgeMs?: number }
 ): Promise<DatetimeAvailabilityResponse> {
   const cacheKey = `${date}_${time.replace(":", "-")}`;
@@ -168,17 +169,19 @@ export async function queryAvailability(
 ): Promise<FieldAvailability[]> {
   const delay = opts?.delayMs ?? 200;
 
-  // One bulk call per date at 9 AM to find which fields have any reservation
+  // One bulk snapshot call per date (midday) to find which fields have any
+  // reservation at the snapshot instant. NOTE: a field free at this instant but
+  // booked earlier/later the same day is treated as fully available here; only
+  // fields reserved at the snapshot get a full per-slot detail fetch below.
   const reservedByDate = new Map<string, Set<string>>();
   for (let i = 0; i < dateRange.length; i++) {
     const date = dateRange[i];
-    const snap = await getReservedIds(date, "9:00");
+    const snap = await getReservedIds(date, SNAPSHOT_TIME);
     reservedByDate.set(date, new Set(snap.l));
     if (i < dateRange.length - 1) await new Promise((r) => setTimeout(r, delay));
   }
 
   // Fields that appear reserved on at least one day need detailed fetch
-  const fieldIds = new Set(fields.map((f) => f.system));
   const needsDetail = fields.filter((f) =>
     dateRange.some((d) => reservedByDate.get(d)?.has(f.system))
   );

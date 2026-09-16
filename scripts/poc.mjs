@@ -240,11 +240,6 @@ async function main() {
   console.log("─".repeat(60));
 
   for (const { field, days } of results) {
-    const availDates = days.filter(d => d.isAvailable).map(d => d.date);
-    const partialDates = days.filter(d => !d.isAvailable && d.availableSlots > 0);
-    const status = availDates.length === days.length ? "FULLY FREE" :
-                   availDates.length === 0 ? "FULLY RESERVED" : "PARTIAL";
-
     console.log(`\n${field.name} [${field.system}]`);
     console.log(`  Surface: ${field.surface_type} | Opens: ${field.opening_time} | Lighted: ${field.close_at_dusk === "TRUE" ? "No" : "Yes"}`);
     for (const day of days) {

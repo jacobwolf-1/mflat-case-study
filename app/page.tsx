@@ -191,9 +191,6 @@ function FieldTableRow({
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const allFree = field.days.every((d) => d.status === "free");
-  const allBusy = field.days.every((d) => d.status === "busy");
-
   return (
     <>
       <tr

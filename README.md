@@ -1,6 +1,16 @@
 # NYC Parks Field Availability
 
+[![CI](https://github.com/jacobwolf-1/mflat-case-study/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobwolf-1/mflat-case-study/actions/workflows/ci.yml)
+![Next.js 16](https://img.shields.io/badge/Next.js-16-black.svg)
+![TypeScript 5](https://img.shields.io/badge/TypeScript-5-3178c6.svg)
+
+**Next.js 16 (App Router) · TypeScript · React 19 · reverse-engineered public-endpoint integration with disk caching.**
+
 Search field and court permit availability across NYC parks. This MVP uses the public NYC Parks permit workflow only — no private APIs or credentials required. The current UI supports short-range searches (up to 7 days) and shows a one-screen comparison table with expandable slot-level detail.
+
+> 📷 **Screenshot placeholder (MVP — capture pending).** Add `docs/media/table.png`:
+> the comparison table for a sport + date range with one row expanded to
+> slot-level detail. Reproduce the exact view with the "Demo query" below.
 
 ## One-line setup
 
@@ -78,10 +88,24 @@ docs/
   data-access-plan.md         # findings, endpoint schemas, risks, and implementation notes
 ```
 
+## Tests
+
+```bash
+npm test          # node:test unit suite (no extra dependencies)
+npm run lint      # eslint (eslint-config-next)
+npx tsc --noEmit  # type-check
+```
+
+The unit suite (`tests/`) covers query validation, date-range generation,
+availability normalization (in-season / issued / pending logic), and the
+disk-cache TTL behavior. CI runs lint, type-check, tests, and a production build
+on every push.
+
 ## Known limitations
 
 - **Search range is capped at 7 days** — the current UI/API intentionally limit the date range for a fast MVP.
 - **Daily status uses a noon snapshot** — the table marks a field as busy if it appears reserved at noon. A field with only morning or evening reservations may still appear free in the top-level table; expand a row for slot-level detail.
+- **Slot counts are approximate** — the "X/24 slots free" figure assumes a typical 24-slot day (8:00 AM–8:00 PM in 30-minute increments); a field that closes earlier has fewer real slots than that denominator implies. The expanded row always lists the actual reserved slots.
 - **Max 200 fields shown** — results are capped to keep the table usable. Fields with conflicts are prioritized near the top so the most decision-relevant rows are visible first.
 - **Catalog staleness** — field metadata changes infrequently; rebuild the catalog when needed.
 - **No published rate limits** — caching and short delays are used to stay polite to the public site.
