@@ -45,22 +45,3 @@ scripts/catalog.mjs          Catalog-only setup and refresh
 ```
 
 All caches live in gitignored `data/cache/`. The field catalog and park-name lookup are reused until explicitly refreshed. Requests identify themselves as `NYCFieldFinder/0.1`; no browser automation or credentials are needed. [Data-access notes](docs/data-access-plan.md) cover endpoint schemas, caching and the verified park-name join.
-
-## Known limitations
-
-- **Sampled availability:** checks run at **09:00, 12:00, 15:00 and 18:00 New York time**. Free means no samples booked; Partly booked means some; Busy means all four. Morning/afternoon/evening labels describe booked samples, not continuous reservations. Bookings between checks can be missed; expand a row and confirm availability with Parks before pursuing a permit.
-- **Slot detail:** I show the number of returned in-season issued/pending reservation slots, not an estimated number of free slots. No returned reservations does not guarantee a field is open or bookable.
-- **Scope:** searches cover up to seven days and display up to 200 fields, with mixed availability first. The public endpoints are undocumented, and cached data can become stale.
-- **Locations:** the October 2026 refresh matched park names for 5,200 of 5,207 fields. Unmatched fields retain their field name and borough. This is a local case study, not a booking service.
-
-## Tests
-
-```bash
-npm ci
-npm run lint
-npx tsc --noEmit
-npm test
-npm run build
-```
-
-The 15 dependency-free tests cover input validation, cache-path safety, date ranges, morning/afternoon/evening sampling, slot normalization, cache TTLs, concurrent request deduplication and location keys. CI runs lint, type-check, tests and a production build on pushes to `main` and pull requests. I also checked live searches, expanded permit details and desktop/mobile layouts in the browser; the screenshot above uses live October 2026 data.
